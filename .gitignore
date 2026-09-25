@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+data/
+
+archive/
+logs/
+my_archive/
+
+#Personal notes
+IMPROVEMENTS.md
+PLANNING.md
+
+# Potential credential files
+*-key.json
+service-account*.json

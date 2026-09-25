@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw # logical name you'll reference in models
+    database: ufc-data-pipeline # GCP project
+    schema: raw # BigQuery dataset
+    tables:
+      - name: events
+      - name: fighter_profiles

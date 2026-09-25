@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: "One row per UFC event, lightly cleaned from raw.events."
+    columns:
+      - name: event_id
+        description: "Primary key for events."
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_events__fights
+    description: "One row per fight, unnested from raw.events."
+    columns:
+      - name: fight_id
+        description: "Primary key for each fight."
+        data_tests:
+          - unique
+          - not_null
+      - name: fighter_1_sig_str_lpm
+        description: "Fighter 1's career significant strikes landed per minute, as of this fight."
+      - name: fighter_1_sig_str_acc_pct
+        description: "Fighter 1's career significant strike accuracy percentage, as of this fight."
+      - name: fighter_1_td_avg
+        description: "Fighter 1's career average takedowns landed per 15 minutes, as of this fight."
+      - name: fighter_1_td_acc_pct
+        description: "Fighter 1's career takedown accuracy percentage, as of this fight."
+      - name: fighter_1_sub_avg
+        description: "Fighter 1's career average submission attempts per 15 minutes, as of this fight."
+      - name: fighter_2_sig_str_lpm
+        description: "Fighter 2's career significant strikes landed per minute, as of this fight."
+      - name: fighter_2_sig_str_acc_pct
+        description: "Fighter 2's career significant strike accuracy percentage, as of this fight."
+      - name: fighter_2_td_avg
+        description: "Fighter 2's career average takedowns landed per 15 minutes, as of this fight."
+      - name: fighter_2_td_acc_pct
+        description: "Fighter 2's career takedown accuracy percentage, as of this fight."
+      - name: fighter_2_sub_avg
+        description: "Fighter 2's career average submission attempts per 15 minutes, as of this fight."
+
+  - name: stg_fighter_profiles
+    description: "One row per fighter profile snapshot, lightly cleaned from raw.fighter_profiles."
+    columns:
+      - name: fighter_id
+        description: "Primary key for fighter profiles."
+        data_tests:
+          - unique
+          - not_null
+      - name: date_of_birth
+        description: "Fighter's date of birth, parsed from ESPN's raw dob_raw string. Null for fighters ESPN has no birth date on record for."
+      - name: reach_inches
+        description: "Fighter's reach in inches. Null for fighters with no reach measurement on ESPN."
+      - name: tko_wins
+        description: "Career wins by knockout or technical knockout."
+      - name: tko_losses
+        description: "Career losses by knockout or technical knockout."
+      - name: sub_wins
+        description: "Career wins by submission."
+      - name: sub_losses
+        description: "Career losses by submission."
+
+  - name: stg_fighter_profiles__fight_history
+    description: "One row per fighter per past fight, unnested from raw.fighter_profiles' striking/clinch/ground history arrays. Stats are null for fights ESPN has no detailed breakdown for."
+    columns:
+      - name: fight_history_id
+        description: "Surrogate key, hashed from fighter_id, fight_date and opponent_name. The natural key is composite since a fighter can have more than one fight on the same date."
+        data_tests:
+          - unique
+          - not_null
+      - name: fighter_id
+        description: "Foreign key to the fighter this history row belongs to."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_fighter_profiles')
+                field: fighter_id
+      - name: fight_date
+        data_tests:
+          - not_null
+      - name: result
+        description: "Outcome of the fight for this fighter: W, L or D."
+      - name: submission_attempts
+        description: "ESPN labels this stat 'Submissions' with no landed/attempted split, unlike takedowns and strikes. Named as an attempt count on the assumption that a fight-ending submission wouldn't be tracked as an ongoing per-fight stat, but this isn't confirmed since there's no fight-method field to verify it against."
