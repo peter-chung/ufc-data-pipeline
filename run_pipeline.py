@@ -7,20 +7,24 @@ from scrapers.fighter_scraper import run_fighter_scrape
 from scrapers.models import Event
 from warehouse.client import new_bigquery_client
 from warehouse.loader import PROJECT, load_events, load_fighter_profiles
-from warehouse.reader import get_stored_fighter_records
+from warehouse.reader import get_stored_completed_event_ids, get_stored_fighter_records
 
 
 def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # REMOVE LIMIT FOR FULL RUN
-    events = run_event_scrape()
-    with open(f"data/raw/event_scrape_{timestamp}.json", "w", encoding="utf-8") as f:
-        json.dump([asdict(event) for event in events], f, indent=2)
-
-    fighters_by_id = _extract_fighter_records(events)
-
     with new_bigquery_client(project=PROJECT) as client:
+        stored_completed_event_ids = get_stored_completed_event_ids(client)
+
+        # REMOVE LIMIT FOR FULL RUN
+        events = run_event_scrape(stored_completed_event_ids=stored_completed_event_ids)
+        with open(
+            f"data/raw/event_scrape_{timestamp}.json", "w", encoding="utf-8"
+        ) as f:
+            json.dump([asdict(event) for event in events], f, indent=2)
+
+        fighters_by_id = _extract_fighter_records(events)
+
         stored_records = get_stored_fighter_records(client)
 
         urls_to_scrape = [
@@ -40,6 +44,8 @@ def main():
         load_fighter_profiles(client, fighter_profiles)
 
 
+# Covers fighters from both upcoming events and newly-scraped completed events,
+# so a fighter's record gets rechecked as soon as one of their fights completes.
 def _extract_fighter_records(events: list[Event]) -> dict[str, tuple[str, str]]:
     fighters_by_id = {
         fighter.id: (

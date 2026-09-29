@@ -34,6 +34,7 @@ def load_events(client, events: list[Event]) -> None:
     job_config = bigquery.LoadJobConfig(
         schema=EVENT_SCHEMA,
         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION],
     )
 
     job = client.load_table_from_json(rows, EVENTS_TABLE, job_config=job_config)

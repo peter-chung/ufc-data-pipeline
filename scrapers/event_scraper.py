@@ -56,6 +56,7 @@ def _parse_fighter(raw: dict) -> Fighter:
 
 def _parse_fight(raw: dict, card_segment: str) -> Fight:
     status = raw.get("status") or {}
+    decision = raw.get("dec") or {}
     networks = raw.get("ntwrks") or {}
     fight = Fight(
         # matchup (always required)
@@ -69,6 +70,11 @@ def _parse_fight(raw: dict, card_segment: str) -> Fight:
         # broadcast / status (optional)
         networks=networks.get("nm"),
         status=status.get("state"),
+        status_detail=status.get("det"),
+        round_number=status.get("rd"),
+        finish_time=status.get("dspClk"),
+        method=decision.get("det"),
+        method_short=decision.get("shrtDspNm"),
     )
 
     return fight
@@ -112,8 +118,7 @@ def scrape_events(page) -> list[Event]:
 
     for event_group in events_by_date.values():
         for event_data in event_group:
-            if not event_data.get("completed"):
-                parsed_events.append(_parse_event(event_data))
+            parsed_events.append(_parse_event(event_data))
 
     return parsed_events
 
@@ -121,8 +126,13 @@ def scrape_events(page) -> list[Event]:
 def scrape_event_fights(page, event: Event) -> None:
     event_url = urljoin(BASE_URL, event.link)
     response = goto_espn(page, event_url)
-    event.short_name = response["page"]["content"]["gamepackage"]["hdr"]["evt"]["snm"]
-    card_segments = response["page"]["content"]["gamepackage"]["cardSegs"]
+    gamepackage = response["page"]["content"]["gamepackage"]
+    event.short_name = gamepackage["hdr"]["evt"]["snm"]
+    card_segments = gamepackage.get("cardSegs")
+
+    if not card_segments:
+        return
+
     fights = []
 
     for card_segment in card_segments:
@@ -136,12 +146,23 @@ def scrape_event_fights(page, event: Event) -> None:
     event.fights = fights
 
 
-def run_event_scrape(headless=True, limit=None) -> list[Event]:
+def run_event_scrape(
+    headless=True, limit=None, stored_completed_event_ids: set[str] | None = None
+) -> list[Event]:
+    stored_completed_event_ids = stored_completed_event_ids or set()
     with sync_playwright() as playwright:
         with new_browser(playwright, headless=headless) as browser:
             page = browser.new_page()
             events = scrape_events(page)
-            target_events = events if limit is None else events[:limit]
+
+            events_to_scrape = [
+                event
+                for event in events
+                if not (event.completed and event.id in stored_completed_event_ids)
+            ]
+            target_events = (
+                events_to_scrape if limit is None else events_to_scrape[:limit]
+            )
 
             print("Event scrape started")
             for event in tqdm(target_events):
@@ -152,7 +173,7 @@ def run_event_scrape(headless=True, limit=None) -> list[Event]:
                     traceback.print_exc()
             print("Event scrape completed")
 
-            return events
+            return target_events
 
 
 if __name__ == "__main__":
