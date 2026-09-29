@@ -97,6 +97,11 @@ FIGHT_SCHEMA = [
     bigquery.SchemaField("date_time", "STRING"),
     bigquery.SchemaField("networks", "STRING"),
     bigquery.SchemaField("status", "STRING"),
+    bigquery.SchemaField("status_detail", "STRING"),
+    bigquery.SchemaField("round_number", "STRING"),
+    bigquery.SchemaField("finish_time", "STRING"),
+    bigquery.SchemaField("method", "STRING"),
+    bigquery.SchemaField("method_short", "STRING"),
 ]
 
 VENUE_SCHEMA = [

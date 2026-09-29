@@ -40,6 +40,29 @@ models:
                 field: fighter_id
               config:
                 severity: warn
+      - name: status_detail
+        description: "Human-readable version of status, e.g. 'Final' or 'Scheduled'. Null for upcoming fights, same as status."
+      - name: finish_round
+        description: "The round the fight ended in. Null for upcoming fights."
+      - name: finish_time
+        description: "Time within the ending round the fight was stopped, e.g. '1:38'. Null for upcoming fights."
+      - name: method
+        description: "How the fight ended, as ESPN's full string. For decisions this is the judges' scorecards, not a clean category — use method_short for grouping by finish type. Null for upcoming fights."
+      - name: method_short
+        description: "How the fight ended, as a short category (e.g. 'KO/TKO', 'U Dec'). Null for upcoming fights."
+      - name: fighter_1_is_win
+        description: "Whether fighter 1 won. False for both fighters on upcoming fights, not just losses — check status before treating false as a loss."
+      - name: fighter_2_is_win
+        description: "Whether fighter 2 won. False for both fighters on upcoming fights, not just losses — check status before treating false as a loss."
+      - name: winner_fighter_id
+        description: "The winning fighter's id. Null for upcoming fights, draws, and no-contests."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_fighter_profiles')
+                field: fighter_id
+              config:
+                severity: warn
       - name: fighter_1_sig_str_lpm
         description: "Fighter 1's career significant strikes landed per minute, as of this fight."
       - name: fighter_1_sig_str_acc_pct

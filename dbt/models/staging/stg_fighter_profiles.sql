@@ -37,6 +37,7 @@ renamed as (
     ground_columns,
     cast(loaded_at as timestamp) as loaded_at
   from source
+  qualify row_number() over (partition by fighter_id order by loaded_at desc) = 1
 )
 
 select * from renamed

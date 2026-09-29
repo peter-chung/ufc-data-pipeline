@@ -49,6 +49,11 @@ class Fight:
     # broadcast / status (optional)
     networks: str | None = None
     status: str | None = None
+    status_detail: str | None = None
+    round_number: str | None = None
+    finish_time: str | None = None
+    method: str | None = None
+    method_short: str | None = None
 
 
 @dataclass

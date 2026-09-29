@@ -14,10 +14,20 @@ def get_stored_fighter_records(client) -> dict[str, str]:
     )
 
     rows = client.query(query).result()
-
     fighter_records = {row.id: row.record for row in rows}
 
     return fighter_records
+
+
+def get_stored_completed_event_ids(client) -> set[str]:
+    query = (
+        "SELECT DISTINCT id FROM `ufc-data-pipeline.raw.events` "
+        "WHERE completed = TRUE AND ARRAY_LENGTH(fights) > 0"
+    )
+
+    rows = client.query(query).result()
+
+    return {row.id for row in rows}
 
 
 if __name__ == "__main__":
