@@ -14,7 +14,13 @@ unnested as (
 )
 
 select
-  to_hex(md5(concat(fighter_id, '|', cast(safe_cast(history.date as timestamp) as string), '|', history.opponent_name))) as fight_history_id,
+  to_hex(md5(concat(
+    fighter_id,
+    '|',
+    coalesce(cast(safe_cast(history.date as timestamp) as string), 'unknown_date'),
+    '|',
+    coalesce(history.opponent_name, 'unknown_opponent')
+  ))) as fight_history_id,
   fighter_id,
   safe_cast(history.date as timestamp) as fight_date,
   history.opponent_name,
