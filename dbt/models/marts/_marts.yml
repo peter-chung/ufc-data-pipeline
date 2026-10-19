@@ -104,3 +104,84 @@ models:
         description: "Career wins by submission."
       - name: sub_losses
         description: "Career losses by submission."
+
+  - name: fct_ufcstats_fights
+    description: "One row per fight, enriched with event and both fighters' details. Carries ufcstats' fight-specific stat breakdown (landed/attempted strikes and takedowns, control time, strike target zones), not just career averages."
+    columns:
+      - name: fight_id
+        description: "Primary key for each fight."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: event_id
+        description: "Foreign key to the event this fight belongs to."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_ufcstats_events')
+                field: event_id
+
+      - name: fighter_1_id
+        description: "Foreign key to the first fighter in the matchup. ufcstats always lists the winner as fighter 1 in its own markup — fighter_1_result is never 'L'."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_ufcstats_fighter_profiles')
+                field: fighter_id
+              config:
+                severity: warn
+
+      - name: fighter_2_id
+        description: "Foreign key to the second fighter in the matchup. ufcstats always lists the loser as fighter 2 — fighter_2_result is never 'W'."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_ufcstats_fighter_profiles')
+                field: fighter_id
+              config:
+                severity: warn
+
+      - name: fighter_1_result
+        description: "Raw result code: 'W', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'L' — see fighter_1_id."
+      - name: fighter_2_result
+        description: "Raw result code: 'L', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'W' — see fighter_2_id."
+      - name: winner_fighter_id
+        description: "The winning fighter's id. Null for draws, no-contests, and fights with no parsed result."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_ufcstats_fighter_profiles')
+                field: fighter_id
+              config:
+                severity: warn
+      - name: fighter_1_sig_str_pct
+        description: "Null when fighter 1 attempted zero significant strikes."
+      - name: fighter_1_td_pct
+        description: "Null when fighter 1 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
+      - name: fighter_1_control_time_seconds
+        description: "Null when ufcstats shows '--' (no control time recorded), not zero seconds."
+      - name: fighter_2_sig_str_pct
+        description: "Null when fighter 2 attempted zero significant strikes."
+      - name: fighter_2_td_pct
+        description: "Null when fighter 2 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
+      - name: fighter_2_control_time_seconds
+        description: "Null when ufcstats shows '--' (no control time recorded), not zero seconds."
+
+  - name: dim_ufcstats_fighter
+    description: "One row per fighter, with bio, physical attributes and career record from their latest scraped ufcstats profile."
+    columns:
+      - name: fighter_id
+        description: "Primary key for each fighter."
+        data_tests:
+          - unique
+          - not_null
+      - name: stance
+        description: "Null when ufcstats shows '--' (no stance on record), rather than the literal placeholder string."
+      - name: date_of_birth
+        description: "Null for fighters ufcstats has no DOB on record for."
+      - name: no_contests
+        description: "Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."

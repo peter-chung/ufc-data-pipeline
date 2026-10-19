@@ -7,3 +7,5 @@ sources:
     tables:
       - name: events
       - name: fighter_profiles
+      - name: ufcstats_events
+      - name: ufcstats_fighter_profiles

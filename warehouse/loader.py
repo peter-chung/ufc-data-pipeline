@@ -6,12 +6,24 @@ from google.cloud import bigquery
 from scrapers.event_scraper import run_event_scrape
 from scrapers.fighter_scraper import run_fighter_scrape
 from scrapers.models import Event, FighterProfile
+from scrapers.ufcstats.models import Event as UfcstatsEvent
+from scrapers.ufcstats.models import FighterProfile as UfcstatsFighterProfile
 from warehouse.client import new_bigquery_client
-from warehouse.schemas import EVENT_SCHEMA, FIGHTER_PROFILE_SCHEMA
+from warehouse.schemas import (
+    EVENT_SCHEMA,
+    FIGHTER_PROFILE_SCHEMA,
+    UFCSTATS_EVENT_SCHEMA,
+    UFCSTATS_FIGHTER_PROFILE_SCHEMA,
+)
 
 PROJECT = "ufc-data-pipeline"
+# ESPN variables
 EVENTS_TABLE = f"{PROJECT}.raw.events"
 FIGHTER_PROFILES_TABLE = f"{PROJECT}.raw.fighter_profiles"
+
+# UFCstats variables
+UFCSTATS_EVENTS_TABLE = f"{PROJECT}.raw.ufcstats_events"
+UFCSTATS_FIGHTER_PROFILES_TABLE = f"{PROJECT}.raw.ufcstats_fighter_profiles"
 
 
 def main():
@@ -52,6 +64,40 @@ def load_fighter_profiles(client, profiles: list[FighterProfile]):
 
     job = client.load_table_from_json(
         rows, FIGHTER_PROFILES_TABLE, job_config=job_config
+    )
+    job.result()
+
+
+def load_ufcstats_events(client, events: list[UfcstatsEvent]) -> None:
+    loaded_at = datetime.now(timezone.utc).isoformat()
+    rows = [{**asdict(event), "loaded_at": loaded_at} for event in events]
+
+    job_config = bigquery.LoadJobConfig(
+        schema=UFCSTATS_EVENT_SCHEMA,
+        write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION],
+    )
+
+    job = client.load_table_from_json(
+        rows, UFCSTATS_EVENTS_TABLE, job_config=job_config
+    )
+    job.result()
+
+
+def load_ufcstats_fighter_profiles(
+    client, profiles: list[UfcstatsFighterProfile]
+) -> None:
+    loaded_at = datetime.now(timezone.utc).isoformat()
+    rows = [{**asdict(profile), "loaded_at": loaded_at} for profile in profiles]
+
+    job_config = bigquery.LoadJobConfig(
+        schema=UFCSTATS_FIGHTER_PROFILE_SCHEMA,
+        write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION],
+    )
+
+    job = client.load_table_from_json(
+        rows, UFCSTATS_FIGHTER_PROFILES_TABLE, job_config=job_config
     )
     job.result()
 
