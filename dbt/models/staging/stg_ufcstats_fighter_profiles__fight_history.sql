@@ -26,6 +26,14 @@ select
     safe_cast(history.td as int64) as td_landed,
     safe_cast(history.sub_attempts as int64) as sub_attempts,
     history.method,
+    case
+        when history.method = 'KO/TKO' then 'KO/TKO'
+        when history.method = 'SUB' then 'SUB'
+        when history.method in ('U-DEC', 'S-DEC', 'M-DEC', 'Decision') then 'DEC'
+        when history.method = 'DQ' then 'DQ'
+        when history.method in ('CNC', 'Overturned') then 'NC'
+        when history.method = 'Other' then 'OTHER'
+    end as method_category,
     history.method_detail,
     safe_cast(history.finish_round as int64) as finish_round,
     history.finish_time

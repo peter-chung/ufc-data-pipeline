@@ -114,6 +114,13 @@ models:
           - unique
           - not_null
 
+      - name: round_lengths_seconds
+        description: "Each scheduled round's length in seconds, parsed from time_format. Includes overtime rounds when present, which can have a different length than regulation rounds."
+      - name: finish_time_elapsed_seconds
+        description: "finish_time converted to seconds."
+      - name: fight_duration_seconds
+        description: "Total fight time: every fully-completed round before finish_round plus finish_time_elapsed_seconds."
+
       - name: event_id
         description: "Foreign key to the event this fight belongs to."
         data_tests:
@@ -149,6 +156,8 @@ models:
         description: "Raw result code: 'W', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'L' — see fighter_1_id."
       - name: fighter_2_result
         description: "Raw result code: 'L', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'W' — see fighter_2_id."
+      - name: method_category
+        description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering — use this instead of the raw method column for any group-by or filter, since method's exact wording isn't standardized."
       - name: winner_fighter_id
         description: "The winning fighter's id. Null for draws, no-contests, and fights with no parsed result."
         data_tests:

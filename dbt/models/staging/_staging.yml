@@ -125,6 +125,8 @@ models:
         description: "Raw result code for fighter 1: 'W', 'L', 'D' or 'NC'. Not yet reduced to a boolean/win flag at this layer."
       - name: fighter_2_result
         description: "Raw result code for fighter 2: 'W', 'L', 'D' or 'NC'. Not yet reduced to a boolean/win flag at this layer."
+      - name: method_category
+        description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering. Needed because this page's method text ('Decision - Unanimous', 'Submission') uses a different vocabulary than stg_ufcstats_fighter_profiles__fight_history's abbreviated codes ('U-DEC', 'SUB') for the same underlying outcome — don't filter either table's raw method column assuming the other's values."
       - name: fighter_1_sig_str_pct
       - name: fighter_1_td_pct
         description: "Null when fighter 1 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
@@ -135,6 +137,12 @@ models:
         description: "Null when fighter 2 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
       - name: fighter_2_control_time_seconds
         description: "Null when ufcstats shows '--' (no control time recorded), not zero seconds."
+      - name: round_lengths_seconds
+        description: "Each scheduled round's length in seconds, parsed from time_format (e.g. '3 Rnd (5-5-5)' -> [300, 300, 300]). Includes overtime rounds when present, which can have a different length than regulation rounds (e.g. '1 Rnd + OT (30-5)' -> [1800, 300])."
+      - name: finish_time_elapsed_seconds
+        description: "finish_time converted to seconds (e.g. '2:32' -> 152)."
+      - name: fight_duration_seconds
+        description: "Total fight time: the scheduled length of every fully-completed round before finish_round, summed from round_lengths_seconds, plus finish_time_elapsed_seconds."
 
   - name: stg_ufcstats_fighter_profiles
     description: "One row per fighter profile snapshot, lightly cleaned from raw.ufcstats_fighter_profiles."
@@ -169,5 +177,7 @@ models:
         description: "Landed count only, no attempted/accuracy — this summary table doesn't carry the 'X of Y' breakdown that the fight-details totals table does."
       - name: td_landed
         description: "Landed count only, no attempted/accuracy — see sig_str_landed."
+      - name: method_category
+        description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering. Needed because this page's abbreviated method codes ('U-DEC', 'SUB') use a different vocabulary than stg_ufcstats_events__fights' full text ('Decision - Unanimous', 'Submission') for the same underlying outcome — don't filter either table's raw method column assuming the other's values."
       - name: method_detail
         description: "Secondary finish descriptor paired with method, e.g. method='KO/TKO' and method_detail='Kicks'."

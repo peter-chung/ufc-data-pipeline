@@ -17,6 +17,18 @@ unnested as (
         ) as fighter_2_totals
     from source
     cross join unnest(fights) as fight
+),
+
+fight_duration_parts as (
+    select
+        *,
+        safe_cast(fight.finish_round as int64) as finish_round,
+        array(
+            select safe_cast(round_length as int64) * 60
+            from unnest(split(regexp_extract(fight.time_format, r'\(([\d-]+)\)'), '-')) as round_length
+        ) as round_lengths_seconds,
+        time_diff(parse_time('%M:%S', fight.finish_time), time '00:00:00', second) as finish_time_elapsed_seconds
+    from unnested
 )
 
 select
@@ -26,8 +38,26 @@ select
     fight.fighter_2.id as fighter_2_id,
     fight.weight_class,
     fight.method,
-    safe_cast(fight.finish_round as int64) as finish_round,
+    case
+        when fight.method in ('KO/TKO', "TKO - Doctor's Stoppage") then 'KO/TKO'
+        when fight.method = 'Submission' then 'SUB'
+        when fight.method in ('Decision - Unanimous', 'Decision - Split', 'Decision - Majority') then 'DEC'
+        when fight.method = 'DQ' then 'DQ'
+        when fight.method in ('Could Not Continue', 'Overturned') then 'NC'
+        when fight.method = 'Other' then 'OTHER'
+    end as method_category,
     fight.finish_time,
+    finish_round,
+    finish_time_elapsed_seconds,
+    round_lengths_seconds,
+    coalesce(
+        (
+            select sum(round_length)
+            from unnest(round_lengths_seconds) as round_length with offset round_index
+            where round_index < finish_round - 1
+        ),
+        0
+    ) + finish_time_elapsed_seconds as fight_duration_seconds,
     fight.time_format,
     fight.referee,
     fight.details,
@@ -85,4 +115,4 @@ select
     safe_cast(regexp_extract(fighter_2_totals.clinch_str, r'of (\d+)$') as int64) as fighter_2_clinch_str_attempted,
     safe_cast(regexp_extract(fighter_2_totals.ground_str, r'^(\d+) of') as int64) as fighter_2_ground_str_landed,
     safe_cast(regexp_extract(fighter_2_totals.ground_str, r'of (\d+)$') as int64) as fighter_2_ground_str_attempted
-from unnested
+from fight_duration_parts
