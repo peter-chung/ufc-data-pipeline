@@ -23,11 +23,11 @@ totals as (
 select
     f.first_name,
     f.last_name,
-    f.sig_str_absorbed_per_min,
+    f.career_sig_str_absorbed_per_min,
     t.total_absorbed,
     t.total_fights
 from totals t
 join {{ ref('dim_ufcstats_fighter') }} f on t.fighter_id = f.fighter_id
-where t.total_fights >= 5 and t.total_absorbed >= 150 and f.sig_str_absorbed_per_min is not null
-order by f.sig_str_absorbed_per_min asc
+where t.total_fights >= 5 and t.total_absorbed >= 150 and f.career_sig_str_absorbed_per_min is not null
+order by f.career_sig_str_absorbed_per_min asc
 limit 10

@@ -152,6 +152,11 @@ models:
               config:
                 severity: warn
 
+      - name: fighter_1_career_wins
+        description: "Whole MMA career record as of the fighter's latest scraped profile, not UFC-only — may include fights in other organizations. Unlike this fact table's own per-fight stats (below), this is pulled straight from dim_ufcstats_fighter."
+      - name: fighter_2_career_wins
+        description: "Whole MMA career record, not UFC-only — see fighter_1_career_wins."
+
       - name: fighter_1_result
         description: "Raw result code: 'W', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'L' — see fighter_1_id."
       - name: fighter_2_result
@@ -192,5 +197,25 @@ models:
         description: "Null when ufcstats shows '--' (no stance on record), rather than the literal placeholder string."
       - name: date_of_birth
         description: "Null for fighters ufcstats has no DOB on record for."
+      - name: career_wins
+        description: "Whole MMA career record, not UFC-only — may include fights in other organizations before/alongside the UFC. Prefixed career_ to distinguish from UFC-only stats computed from fct_ufcstats_fights."
+      - name: career_losses
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_draws
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_no_contests
+        description: "Whole MMA career record, not UFC-only — see career_wins. Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."
+      - name: career_sig_str_landed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-volume floor; small-sample fighters can show implausible rates (e.g. 30+ landed/min from very little total cage time)."
+      - name: career_sig_str_absorbed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Same small-sample caveat as career_sig_str_landed_per_min."
+      - name: career_td_acc_pct
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-attempts floor; fighters with very few career takedown attempts can show 100%."
+      - name: wins
+        description: "UFC-only record, computed from stg_ufcstats_events__fights — compare against career_wins for whole-career context. 0, not null, for fighters with no scraped UFC fight results yet."
+      - name: losses
+        description: "UFC-only record — see wins."
+      - name: draws
+        description: "UFC-only record — see wins."
       - name: no_contests
-        description: "Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."
+        description: "UFC-only record — see wins."

@@ -156,8 +156,20 @@ models:
         description: "Null when ufcstats shows '--' (no stance on record), rather than the literal placeholder string."
       - name: date_of_birth
         description: "Null for fighters ufcstats has no DOB on record for."
-      - name: no_contests
-        description: "Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."
+      - name: career_wins
+        description: "Whole MMA career record, not UFC-only — may include fights in other organizations before/alongside the UFC. Prefixed career_ to distinguish from UFC-only stats computed from fct_ufcstats_fights."
+      - name: career_losses
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_draws
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_no_contests
+        description: "Whole MMA career record, not UFC-only — see career_wins. Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."
+      - name: career_sig_str_landed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-volume floor; small-sample fighters can show implausible rates (e.g. 30+ landed/min from very little total cage time)."
+      - name: career_sig_str_absorbed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Same small-sample caveat as career_sig_str_landed_per_min."
+      - name: career_td_acc_pct
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-attempts floor; fighters with very few career takedown attempts can show 100%."
 
   - name: stg_ufcstats_fighter_profiles__fight_history
     description: "One row per fighter per past UFC fight, unnested from raw.ufcstats_fighter_profiles' fight_history array. Unlike ESPN, ufcstats gives each fight a real shared id (fight_id), so the natural key here is the composite (fighter_id, fight_id) rather than a hashed surrogate."
