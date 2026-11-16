@@ -6,11 +6,11 @@
 
 with absorbed as (
     select fighter_1_id as fighter_id, fighter_2_sig_str_landed as landed
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_2_sig_str_landed is not null
     union all
     select fighter_2_id as fighter_id, fighter_1_sig_str_landed as landed
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_1_sig_str_landed is not null
 ),
 
@@ -27,7 +27,7 @@ select
     t.total_absorbed,
     t.total_fights
 from totals t
-join {{ ref('dim_ufcstats_fighter') }} f on t.fighter_id = f.fighter_id
+join {{ ref('dim_fighters') }} f on t.fighter_id = f.fighter_id
 where t.total_fights >= 5 and t.total_absorbed >= 150 and f.career_sig_str_absorbed_per_min is not null
 order by f.career_sig_str_absorbed_per_min asc
 limit 10

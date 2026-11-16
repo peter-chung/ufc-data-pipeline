@@ -5,11 +5,11 @@
 
 with decision_wins as (
     select fighter_1_id as fighter_id
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_1_result = 'W' and method_category = 'DEC'
     union all
     select fighter_2_id as fighter_id
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_2_result = 'W' and method_category = 'DEC'
 ),
 
@@ -28,7 +28,7 @@ decision_rates as (
         t.total_decision_wins,
         safe_divide(t.total_decision_wins, f.wins) * 100 as decision_rate_pct
     from decision_win_totals t
-    join {{ ref('dim_ufcstats_fighter') }} f on t.fighter_id = f.fighter_id
+    join {{ ref('dim_fighters') }} f on t.fighter_id = f.fighter_id
 )
 
 select

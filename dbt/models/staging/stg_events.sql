@@ -1,19 +1,15 @@
 with source as (
-    select * from {{ source('raw', 'events') }}
+    select * from {{ source('raw', 'ufcstats_events') }}
 ),
 
 renamed as (
     select
         id as event_id,
         name as event_name,
-        short_name,
         link as event_link,
-        parse_timestamp('%Y-%m-%dT%H:%M%Ez', date) as event_date,
-        status,
-        status_detail,
+        safe.parse_date('%B %d, %Y', date_raw) as event_date,
         completed,
-        is_postponed_or_canceled,
-        venue,
+        location_raw,
         fights,
         safe_cast(loaded_at as timestamp) as loaded_at
     from source

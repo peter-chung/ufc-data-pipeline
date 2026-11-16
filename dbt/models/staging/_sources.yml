@@ -5,7 +5,5 @@ sources:
     database: ufc-data-pipeline # GCP project
     schema: raw # BigQuery dataset
     tables:
-      - name: events
-      - name: fighter_profiles
       - name: ufcstats_events
       - name: ufcstats_fighter_profiles

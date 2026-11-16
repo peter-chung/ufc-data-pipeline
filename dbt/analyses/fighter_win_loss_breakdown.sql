@@ -7,10 +7,10 @@
 
 with results as (
     select fighter_1_id as fighter_id, fighter_1_result as result, method_category
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     union all
     select fighter_2_id as fighter_id, fighter_2_result as result, method_category
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
 ),
 
 agg as (
@@ -27,6 +27,6 @@ agg as (
 
 select f.first_name, f.last_name, a.*
 from agg a
-join {{ ref('dim_ufcstats_fighter') }} f on a.fighter_id = f.fighter_id
+join {{ ref('dim_fighters') }} f on a.fighter_id = f.fighter_id
 order by a.wins desc
 limit 10

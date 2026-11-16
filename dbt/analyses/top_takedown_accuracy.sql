@@ -1,6 +1,6 @@
 -- Top 10 fighters by takedown accuracy (career average).
 --
--- dim_ufcstats_fighter.career_td_acc_pct is ufcstats' own career-average stat,
+-- dim_fighters.career_td_acc_pct is ufcstats' own career-average stat,
 -- but it's unreliable for fighters with very few career takedown attempts --
 -- a fighter who's gone 1-for-1 or 2-for-2 shows a meaningless 100%. Guard
 -- against that with a volume floor on total takedowns attempted (not landed,
@@ -12,11 +12,11 @@
 
 with fighter_takedowns as (
     select fighter_1_id as fighter_id, fighter_1_td_attempted as attempted, fighter_1_td_landed as landed
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_1_td_attempted is not null
     union all
     select fighter_2_id as fighter_id, fighter_2_td_attempted as attempted, fighter_2_td_landed as landed
-    from {{ ref('fct_ufcstats_fights') }}
+    from {{ ref('fct_fights') }}
     where fighter_2_td_attempted is not null
 ),
 
@@ -44,7 +44,7 @@ select
     t.total_td_landed,
     t.td_acc_pct
 from td_accuracy t
-join {{ ref('dim_ufcstats_fighter') }} f on t.fighter_id = f.fighter_id
+join {{ ref('dim_fighters') }} f on t.fighter_id = f.fighter_id
 where t.total_td_attempted >= 20
 order by t.td_acc_pct desc
 limit 10
