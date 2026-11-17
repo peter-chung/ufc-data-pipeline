@@ -7,6 +7,7 @@ unnested as (
     select
         source.id as event_id,
         fight,
+        fight_order,
         (
             select s from unnest(fight.fighter_1_stats) as s
             where s.round is null limit 1
@@ -16,7 +17,7 @@ unnested as (
             where s.round is null limit 1
         ) as fighter_2_totals
     from source
-    cross join unnest(fights) as fight
+    cross join unnest(fights) as fight with offset fight_order
 ),
 
 fight_duration_parts as (
@@ -34,6 +35,7 @@ fight_duration_parts as (
 select
     fight.id as fight_id,
     event_id,
+    fight_order,
     fight.fighter_1.id as fighter_1_id,
     fight.fighter_2.id as fighter_2_id,
     fight.weight_class,

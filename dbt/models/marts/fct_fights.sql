@@ -1,6 +1,7 @@
 select
     f.fight_id,
     f.event_id,
+    f.fight_order,
     f.fighter_1_id,
     f.fighter_2_id,
     e.event_name,

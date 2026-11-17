@@ -9,6 +9,8 @@ models:
         data_tests:
           - unique
           - not_null
+      - name: fight_order
+        description: "0-based position of this fight within its event, in ufcstats' own listing order — 0 is the main event, ascending down the card. Not a guaranteed broadcast-segment boundary on its own; ufcstats has no segment concept at all, this is purely display/running order."
 
       - name: round_lengths_seconds
         description: "Each scheduled round's length in seconds, parsed from time_format. Includes overtime rounds when present, which can have a different length than regulation rounds."
