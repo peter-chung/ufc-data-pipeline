@@ -12,7 +12,13 @@ models:
       - name: event_date
         description: "Date only, parsed from ufcstats' date_raw. No time-of-day or timezone — ufcstats.com doesn't publish fight start times."
       - name: location_raw
-        description: "Raw 'City, State, Country' string, not yet split into parts."
+        description: "Raw 'City, State, Country' (or 'City, Country' when the country has no state/province subdivision, e.g. 'Singapore, Singapore') string. Kept alongside event_city/event_state/event_country below for debugging the split."
+      - name: event_city
+        description: "First comma-separated part of location_raw."
+      - name: event_state
+        description: "Middle comma-separated part of location_raw. Null when location_raw only has two parts (city, country) — not every country ufcstats lists has a state/province subdivision."
+      - name: event_country
+        description: "Last comma-separated part of location_raw."
       - name: completed
         description: "Whether the event has happened. Distinguishes rows scraped from ufcstats' completed-events listing (true) vs its upcoming-events listing (false); upcoming events have no fight stats."
 
