@@ -15,6 +15,8 @@ models:
         description: "The event's ufcstats.com event-details URL."
       - name: event_completed
         description: "Whether the event has happened yet. False for upcoming fights, where all stat/result columns below are null."
+      - name: event_status
+        description: "'completed', 'upcoming' or 'cancelled', from stg_events.event_status. Filter out 'cancelled' for anything user-facing; cancelled events' fights never happened."
       - name: event_city
       - name: event_state
         description: "Null when the event's country has no state/province subdivision in ufcstats' location string (e.g. 'Singapore, Singapore')."

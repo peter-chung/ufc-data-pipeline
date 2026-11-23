@@ -220,7 +220,13 @@ def scrape_fight_detail(page, fight: Fight) -> None:
 
 def run_event_scrape(
     headless=True, limit=None, stored_completed_event_ids: set[str] | None = None
-) -> list[Event]:
+) -> tuple[list[Event], list[tuple[str, str, str]]]:
+    """Returns (events, upcoming_index).
+
+    upcoming_index is every (event_id, name, link) on ufcstats' upcoming-events
+    page this run, including events whose detail page failed to scrape. It's
+    the source of truth for "still on the schedule" (see stg_events.event_status).
+    """
     stored_completed_event_ids = stored_completed_event_ids or set()
     with sync_playwright() as playwright:
         with new_browser(playwright, headless=headless) as browser:
@@ -254,7 +260,7 @@ def run_event_scrape(
                     traceback.print_exc()
             print("Event scrape completed")
 
-            return events
+            return events, upcoming_index
 
 
 if __name__ == "__main__":

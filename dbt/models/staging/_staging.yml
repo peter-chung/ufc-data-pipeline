@@ -21,6 +21,13 @@ models:
         description: "Last comma-separated part of location_raw."
       - name: completed
         description: "Whether the event has happened. Distinguishes rows scraped from ufcstats' completed-events listing (true) vs its upcoming-events listing (false); upcoming events have no fight stats."
+      - name: event_status
+        description: "'completed' (results posted), 'cancelled' (future-dated, but gone from the latest snapshot of ufcstats' upcoming-events page; usually a cancellation or a postponement under a new event id), or 'upcoming' (everything else, including past-dated events whose results aren't posted yet). Nothing is marked cancelled until raw.ufcstats_upcoming_index has a snapshot."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['completed', 'upcoming', 'cancelled']
 
   - name: stg_events__fights
     description: "One row per fight, unnested from raw.ufcstats_events. Only the fight-totals stat row (round = null) per fighter is used here; per-round breakdowns exist in the source but aren't modeled at this grain."

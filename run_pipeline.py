@@ -9,6 +9,7 @@ from warehouse.loader import (
     PROJECT,
     load_ufcstats_events,
     load_ufcstats_fighter_profiles,
+    load_ufcstats_upcoming_index,
 )
 from warehouse.reader import (
     get_stored_ufcstats_completed_event_ids,
@@ -22,12 +23,15 @@ def main():
     with new_bigquery_client(project=PROJECT) as client:
         # Events
         stored_completed_event_ids = get_stored_ufcstats_completed_event_ids(client)
-        events = run_event_scrape(stored_completed_event_ids=stored_completed_event_ids)
+        events, upcoming_index = run_event_scrape(
+            stored_completed_event_ids=stored_completed_event_ids
+        )
         with open(
             f"data/raw/ufcstats_event_scrape_{timestamp}.json", "w", encoding="utf-8"
         ) as f:
             json.dump([asdict(event) for event in events], f, indent=2)
         load_ufcstats_events(client, events)
+        load_ufcstats_upcoming_index(client, upcoming_index)
 
         # Fighter profiles
         # Fighter ids in events that recently have been completed

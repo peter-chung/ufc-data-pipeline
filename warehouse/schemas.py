@@ -64,6 +64,13 @@ UFCSTATS_EVENT_SCHEMA = [
     bigquery.SchemaField("loaded_at", "STRING"),
 ]
 
+# One row per event on ufcstats' upcoming-events page, per pipeline run.
+UFCSTATS_UPCOMING_INDEX_SCHEMA = [
+    bigquery.SchemaField("id", "STRING", mode="REQUIRED"),
+    bigquery.SchemaField("name", "STRING"),
+    bigquery.SchemaField("loaded_at", "STRING"),
+]
+
 UFCSTATS_FIGHT_HISTORY_ENTRY_SCHEMA = [
     bigquery.SchemaField("fight_id", "STRING", mode="REQUIRED"),
     bigquery.SchemaField("fight_link", "STRING", mode="REQUIRED"),

@@ -8,6 +8,7 @@ select
     e.event_date,
     e.event_link,
     e.completed as event_completed,
+    e.event_status,
     e.location_raw,
     e.event_city,
     e.event_state,
