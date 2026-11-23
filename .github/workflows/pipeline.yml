@@ -1,0 +1,73 @@
+# Daily pipeline: scrape ufcstats → load BigQuery raw → dbt build (refresh
+# views + tests) → trigger mma-scrape's Postgres sync.
+#
+# Started by cron-job.org through GitHub's workflow_dispatch API (instead of a
+# `schedule:` trigger, which GitHub disables after 60 days without commits on a
+# public repo and often runs late). Can also be run by hand from the Actions tab.
+#
+# GCP auth is keyless (Workload Identity Federation): the provider only accepts
+# tokens from this repo's master branch, mapped to pipeline-writer, which can
+# write to the raw and analytics datasets and nothing else.
+
+name: pipeline
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/939708488423/locations/global/workloadIdentityPools/github/providers/ufc-data-pipeline
+          service_account: pipeline-writer@ufc-data-pipeline.iam.gserviceaccount.com
+
+      - name: Scrape and load
+        run: |
+          mkdir -p data/raw
+          python run_pipeline.py
+
+      - name: dbt build
+        working-directory: dbt
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/dbt/ci
+        run: dbt build
+
+      - name: Keep scraped JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-${{ github.run_id }}
+          path: data/raw/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # /sync answers 500 if the ESPN segment step had problems, which fails
+      # this step (and GitHub emails). cron-job.org's 6 AM /sync is the backup.
+      - name: Trigger mma-scrape sync
+        run: |
+          curl --silent --show-error --fail-with-body --max-time 120 \
+            -X POST -H "x-api-key: ${{ secrets.MMA_SCRAPE_SYNC_KEY }}" \
+            https://mma-events-api.vercel.app/sync

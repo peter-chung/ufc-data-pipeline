@@ -1,0 +1,15 @@
+# dbt profile for GitHub Actions. No secrets: `oauth` uses the Application
+# Default Credentials that google-github-actions/auth sets up.
+ufc_data_pipeline:
+  target: ci
+  outputs:
+    ci:
+      type: bigquery
+      method: oauth
+      project: ufc-data-pipeline
+      dataset: analytics
+      location: US
+      threads: 4
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      priority: interactive
