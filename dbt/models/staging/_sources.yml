@@ -5,5 +5,7 @@ sources:
     database: ufc-data-pipeline # GCP project
     schema: raw # BigQuery dataset
     tables:
-      - name: events
-      - name: fighter_profiles
+      - name: ufcstats_events
+      - name: ufcstats_fighter_profiles
+      - name: ufcstats_upcoming_index
+        description: "Snapshot of ufcstats' upcoming-events page, one row per listed event per pipeline run (same loaded_at within a run). Used to detect events that dropped off the schedule."

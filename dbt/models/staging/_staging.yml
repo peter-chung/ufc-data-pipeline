@@ -2,98 +2,112 @@ version: 2
 
 models:
   - name: stg_events
-    description: "One row per UFC event, lightly cleaned from raw.events."
+    description: "One row per UFC event, lightly cleaned from raw.ufcstats_events."
     columns:
       - name: event_id
         description: "Primary key for events."
         data_tests:
           - unique
           - not_null
+      - name: event_date
+        description: "Date only, parsed from ufcstats' date_raw. No time-of-day or timezone — ufcstats.com doesn't publish fight start times."
+      - name: location_raw
+        description: "Raw 'City, State, Country' (or 'City, Country' when the country has no state/province subdivision, e.g. 'Singapore, Singapore') string. Kept alongside event_city/event_state/event_country below for debugging the split."
+      - name: event_city
+        description: "First comma-separated part of location_raw."
+      - name: event_state
+        description: "Middle comma-separated part of location_raw. Null when location_raw only has two parts (city, country) — not every country ufcstats lists has a state/province subdivision."
+      - name: event_country
+        description: "Last comma-separated part of location_raw."
+      - name: completed
+        description: "Whether the event has happened. Distinguishes rows scraped from ufcstats' completed-events listing (true) vs its upcoming-events listing (false); upcoming events have no fight stats."
+      - name: event_status
+        description: "'completed' (results posted), 'cancelled' (future-dated, but gone from the latest snapshot of ufcstats' upcoming-events page; usually a cancellation or a postponement under a new event id), or 'upcoming' (everything else, including past-dated events whose results aren't posted yet). Nothing is marked cancelled until raw.ufcstats_upcoming_index has a snapshot."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['completed', 'upcoming', 'cancelled']
 
   - name: stg_events__fights
-    description: "One row per fight, unnested from raw.events."
+    description: "One row per fight, unnested from raw.ufcstats_events. Only the fight-totals stat row (round = null) per fighter is used here; per-round breakdowns exist in the source but aren't modeled at this grain."
     columns:
       - name: fight_id
         description: "Primary key for each fight."
         data_tests:
           - unique
           - not_null
-      - name: status_detail
-        description: "Human-readable version of status, e.g. 'Final' or 'Scheduled'. Null for upcoming fights, same as status."
-      - name: finish_round
-        description: "The round the fight ended in. Null for upcoming fights."
-      - name: finish_time
-        description: "Time within the ending round the fight was stopped, e.g. '1:38'. Null for upcoming fights."
-      - name: method
-        description: "How the fight ended, as ESPN's full string. For decisions this is the judges' scorecards (e.g. '48-47 | 49-46 | 49-46'), not a clean category — use method_short for grouping by finish type. Null for upcoming fights."
-      - name: method_short
-        description: "How the fight ended, as a short category (e.g. 'KO/TKO', 'U Dec'). Null for upcoming fights."
-      - name: fighter_1_is_win
-        description: "Whether fighter 1 won. False for both fighters on upcoming fights, not just losses — check status before treating false as a loss."
-      - name: fighter_2_is_win
-        description: "Whether fighter 2 won. False for both fighters on upcoming fights, not just losses — check status before treating false as a loss."
-      - name: fighter_1_sig_str_lpm
-        description: "Fighter 1's career significant strikes landed per minute, as of this fight."
-      - name: fighter_1_sig_str_acc_pct
-        description: "Fighter 1's career significant strike accuracy percentage, as of this fight."
-      - name: fighter_1_td_avg
-        description: "Fighter 1's career average takedowns landed per 15 minutes, as of this fight."
-      - name: fighter_1_td_acc_pct
-        description: "Fighter 1's career takedown accuracy percentage, as of this fight."
-      - name: fighter_1_sub_avg
-        description: "Fighter 1's career average submission attempts per 15 minutes, as of this fight."
-      - name: fighter_2_sig_str_lpm
-        description: "Fighter 2's career significant strikes landed per minute, as of this fight."
-      - name: fighter_2_sig_str_acc_pct
-        description: "Fighter 2's career significant strike accuracy percentage, as of this fight."
-      - name: fighter_2_td_avg
-        description: "Fighter 2's career average takedowns landed per 15 minutes, as of this fight."
-      - name: fighter_2_td_acc_pct
-        description: "Fighter 2's career takedown accuracy percentage, as of this fight."
-      - name: fighter_2_sub_avg
-        description: "Fighter 2's career average submission attempts per 15 minutes, as of this fight."
+      - name: fight_order
+        description: "0-based position of this fight within its event, in ufcstats' own listing order — 0 is the main event, ascending down the card (main card, then prelims, then early prelims). Not a guaranteed broadcast-segment boundary on its own; ufcstats has no segment concept at all, this is purely display/running order."
+      - name: fighter_1_result
+        description: "Raw result code for fighter 1: 'W', 'L', 'D' or 'NC'. Not yet reduced to a boolean/win flag at this layer."
+      - name: fighter_2_result
+        description: "Raw result code for fighter 2: 'W', 'L', 'D' or 'NC'. Not yet reduced to a boolean/win flag at this layer."
+      - name: method_category
+        description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering. Needed because this page's method text ('Decision - Unanimous', 'Submission') uses a different vocabulary than stg_fighter_profiles__fight_history's abbreviated codes ('U-DEC', 'SUB') for the same underlying outcome — don't filter either table's raw method column assuming the other's values."
+      - name: fighter_1_sig_str_pct
+      - name: fighter_1_td_pct
+        description: "Null when fighter 1 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
+      - name: fighter_1_control_time_seconds
+        description: "Null when ufcstats shows '--' (no control time recorded), not zero seconds."
+      - name: fighter_2_sig_str_pct
+      - name: fighter_2_td_pct
+        description: "Null when fighter 2 attempted zero takedowns (ufcstats shows '---' rather than a percentage)."
+      - name: fighter_2_control_time_seconds
+        description: "Null when ufcstats shows '--' (no control time recorded), not zero seconds."
+      - name: round_lengths_seconds
+        description: "Each scheduled round's length in seconds, parsed from time_format (e.g. '3 Rnd (5-5-5)' -> [300, 300, 300]). Includes overtime rounds when present, which can have a different length than regulation rounds (e.g. '1 Rnd + OT (30-5)' -> [1800, 300])."
+      - name: finish_time_elapsed_seconds
+        description: "finish_time converted to seconds (e.g. '2:32' -> 152)."
+      - name: fight_duration_seconds
+        description: "Total fight time: the scheduled length of every fully-completed round before finish_round, summed from round_lengths_seconds, plus finish_time_elapsed_seconds."
 
   - name: stg_fighter_profiles
-    description: "One row per fighter profile snapshot, lightly cleaned from raw.fighter_profiles."
+    description: "One row per fighter profile snapshot, lightly cleaned from raw.ufcstats_fighter_profiles."
     columns:
       - name: fighter_id
         description: "Primary key for fighter profiles."
         data_tests:
           - unique
           - not_null
+      - name: stance
+        description: "Null when ufcstats shows '--' (no stance on record), rather than the literal placeholder string."
       - name: date_of_birth
-        description: "Fighter's date of birth, parsed from ESPN's raw dob_raw string. Null for fighters ESPN has no birth date on record for."
-      - name: reach_inches
-        description: "Fighter's reach in inches. Null for fighters with no reach measurement on ESPN."
-      - name: tko_wins
-        description: "Career wins by knockout or technical knockout."
-      - name: tko_losses
-        description: "Career losses by knockout or technical knockout."
-      - name: sub_wins
-        description: "Career wins by submission."
-      - name: sub_losses
-        description: "Career losses by submission."
+        description: "Null for fighters ufcstats has no DOB on record for."
+      - name: career_wins
+        description: "Whole MMA career record, not UFC-only — may include fights in other organizations before/alongside the UFC. Prefixed career_ to distinguish from UFC-only stats computed from fct_fights."
+      - name: career_losses
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_draws
+        description: "Whole MMA career record, not UFC-only — see career_wins."
+      - name: career_no_contests
+        description: "Whole MMA career record, not UFC-only — see career_wins. Parsed separately from wins/losses/draws, since ufcstats tracks no-contests outside the W-L-D record (e.g. '28-1-0 (1 NC)'). Defaults to 0 when no NC suffix is present, not null."
+      - name: career_sig_str_landed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-volume floor; small-sample fighters can show implausible rates (e.g. 30+ landed/min from very little total cage time)."
+      - name: career_sig_str_absorbed_per_min
+        description: "Whole MMA career average, not UFC-only — see career_wins. Same small-sample caveat as career_sig_str_landed_per_min."
+      - name: career_td_acc_pct
+        description: "Whole MMA career average, not UFC-only — see career_wins. Not guarded by a minimum-attempts floor; fighters with very few career takedown attempts can show 100%."
 
   - name: stg_fighter_profiles__fight_history
-    description: "One row per fighter per past fight, unnested from raw.fighter_profiles' striking/clinch/ground history arrays. Stats are null for fights ESPN has no detailed breakdown for."
+    description: "One row per fighter per past UFC fight, unnested from raw.ufcstats_fighter_profiles' fight_history array. Each fight has a real shared id (fight_id), so the natural key here is the composite (fighter_id, fight_id) rather than a hashed surrogate."
     columns:
-      - name: fight_history_id
-        description: "Surrogate key, hashed from fighter_id, fight_date and opponent_name. The natural key is composite since a fighter can have more than one fight on the same date."
+      - name: fight_id
+        description: "Shared with stg_events__fights.fight_id when that event/card was also scraped."
         data_tests:
-          - unique
           - not_null
       - name: fighter_id
-        description: "Foreign key to the fighter this history row belongs to."
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_fighter_profiles')
                 field: fighter_id
-      - name: fight_date
-        data_tests:
-          - not_null
-      - name: result
-        description: "Outcome of the fight for this fighter: W, L or D."
-      - name: submission_attempts
-        description: "ESPN labels this stat 'Submissions' with no landed/attempted split, unlike takedowns and strikes. Named as an attempt count on the assumption that a fight-ending submission wouldn't be tracked as an ongoing per-fight stat, but this isn't confirmed since there's no fight-method field to verify it against."
+      - name: sig_str_landed
+        description: "Landed count only, no attempted/accuracy — this summary table doesn't carry the 'X of Y' breakdown that the fight-details totals table does."
+      - name: td_landed
+        description: "Landed count only, no attempted/accuracy — see sig_str_landed."
+      - name: method_category
+        description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering. Needed because this page's abbreviated method codes ('U-DEC', 'SUB') use a different vocabulary than stg_events__fights' full text ('Decision - Unanimous', 'Submission') for the same underlying outcome — don't filter either table's raw method column assuming the other's values."
+      - name: method_detail
+        description: "Secondary finish descriptor paired with method, e.g. method='KO/TKO' and method_detail='Kicks'."
