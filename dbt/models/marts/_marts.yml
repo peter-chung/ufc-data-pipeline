@@ -11,6 +11,8 @@ models:
           - not_null
       - name: fight_order
         description: "0-based position of this fight within its event, in ufcstats' own listing order — 0 is the main event, ascending down the card. Not a guaranteed broadcast-segment boundary on its own; ufcstats has no segment concept at all, this is purely display/running order."
+      - name: event_link
+        description: "The event's ufcstats.com event-details URL."
       - name: event_completed
         description: "Whether the event has happened yet. False for upcoming fights, where all stat/result columns below are null."
       - name: event_city

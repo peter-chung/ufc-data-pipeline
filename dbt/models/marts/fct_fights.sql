@@ -6,6 +6,7 @@ select
     f.fighter_2_id,
     e.event_name,
     e.event_date,
+    e.event_link,
     e.completed as event_completed,
     e.location_raw,
     e.event_city,
