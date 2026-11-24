@@ -39,7 +39,7 @@ models:
                 field: event_id
 
       - name: fighter_1_id
-        description: "Foreign key to the first fighter in the matchup. ufcstats always lists the winner as fighter 1 in its own markup — fighter_1_result is never 'L'."
+        description: "Foreign key to the red-corner fighter (taken from the fight page's order). Fights scraped before that fix, and not yet re-scraped by rescrape_completed_events.py, list the winner here instead."
         data_tests:
           - not_null
           - relationships:
@@ -50,7 +50,7 @@ models:
                 severity: warn
 
       - name: fighter_2_id
-        description: "Foreign key to the second fighter in the matchup. ufcstats always lists the loser as fighter 2 — fighter_2_result is never 'W'."
+        description: "Foreign key to the blue-corner fighter — see fighter_1_id."
         data_tests:
           - not_null
           - relationships:
@@ -66,9 +66,9 @@ models:
         description: "Whole MMA career record, not UFC-only — see fighter_1_career_wins."
 
       - name: fighter_1_result
-        description: "Raw result code: 'W', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'L' — see fighter_1_id."
+        description: "Raw result code: 'W', 'L', 'D', 'NC', or null for upcoming fights and a small number where ufcstats' status badge didn't parse. Use winner_fighter_id rather than assuming either corner won."
       - name: fighter_2_result
-        description: "Raw result code: 'L', 'D', 'NC', or null for a small number of fights where ufcstats' status badge didn't parse. Never 'W' — see fighter_2_id."
+        description: "Raw result code for the blue corner — see fighter_1_result."
       - name: method_category
         description: "method normalized to a small shared set (KO/TKO, SUB, DEC, DQ, NC, OTHER) for grouping/filtering — use this instead of the raw method column for any group-by or filter, since method's exact wording isn't standardized."
       - name: winner_fighter_id
