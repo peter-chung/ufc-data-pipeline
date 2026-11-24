@@ -149,6 +149,25 @@ def _apply_stat_row(row, field_names, stats_by_fighter_id):
             setattr(stats_by_fighter_id[fighter_id], field_name, value)
 
 
+def _put_in_corner_order(fight: Fight, persons) -> None:
+    """Make fighter_1 the red corner and fighter_2 the blue corner.
+
+    The event page lists a finished fight's winner first, so fighter order
+    taken from it says who won, not who was in which corner. The fight page
+    lists the red corner first (the first fighter wins ~70% of the time there,
+    in line with red-corner win rates, vs 100% on the event page). Upcoming
+    bouts are already red-first on the event page.
+    """
+    person_ids = []
+    for person in persons:
+        link_tag = person.find("a", class_="b-fight-details__person-link")
+        if link_tag is not None:
+            person_ids.append(extract_id_from_href(link_tag["href"]))
+
+    if person_ids == [fight.fighter_2.id, fight.fighter_1.id]:
+        fight.fighter_1, fight.fighter_2 = fight.fighter_2, fight.fighter_1
+
+
 def scrape_fight_detail(page, fight: Fight) -> None:
     soup = goto_ufcstats(page, fight.link, wait_selector=".b-fight-details__persons")
 
@@ -161,7 +180,10 @@ def scrape_fight_detail(page, fight: Fight) -> None:
     fight.referee = metadata.get("Referee")
     fight.details = metadata.get("Details")
 
-    for person in soup.find_all("div", class_="b-fight-details__person"):
+    persons = soup.find_all("div", class_="b-fight-details__person")
+    _put_in_corner_order(fight, persons)
+
+    for person in persons:
         status_tag = person.find("i", class_="b-fight-details__person-status")
         link_tag = person.find("a", class_="b-fight-details__person-link")
         if status_tag is None or link_tag is None:
